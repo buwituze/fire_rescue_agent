@@ -46,6 +46,7 @@ class FireRescueEnv(gym.Env):
 
         # Spawn survivor at random free cell
         self.survivor = self._random_free_cell()
+        self.survivor_initial_pos = self.survivor.copy()  # Track initial position
 
         self.carrying = 0
         self.time_left = self.max_time
@@ -53,6 +54,14 @@ class FireRescueEnv(gym.Env):
         # Reset distance tracking
         self.last_s_dist = None
         self.last_d_dist = None
+        
+        # Reset episode metrics
+        self.wall_collisions = 0
+        self.total_moves = 0
+        self.scan_attempts = 0
+        self.useful_scans = 0
+        self.pickup_attempts = 0
+        self.survivor_found_step = None  # Track when survivor was first reached
 
         return self._get_obs(), {}
 
@@ -68,33 +77,50 @@ class FireRescueEnv(gym.Env):
         reward = -0.01   # Small step penalty to encourage efficiency
         done = False
         truncated = False
-        info = {}
+        info = {"success": False}  # Initialize success flag to False
 
         # Decrease time
         self.time_left -= 1
+        current_step = self.max_time - self.time_left
         
         # Check timeout FIRST
         if self.time_left <= 0:
             info["timeout"] = True
             info["success"] = False
+            # Add metrics to info
+            self._add_metrics_to_info(info, current_step)
             return self._get_obs(), -10, False, True, info  # truncated=True
 
         # === EXECUTE ACTION ===================================
 
         if action in [0, 1, 2, 3]:  # Movement
+            self.total_moves += 1
             move_reward = self._move(action)
             reward += move_reward
+            if move_reward == -1:  # Wall collision or out of bounds
+                self.wall_collisions += 1
 
         elif action == 4:  # Scan
+            self.scan_attempts += 1
+            # Scan gives bonus when near survivor to encourage discovery
             manhattan_dist = np.linalg.norm(self.agent - self.survivor, ord=1)
-            if manhattan_dist <= 1:
-                reward += 2  # Survivor nearby
+            if manhattan_dist <= 1.5:  # Slightly larger radius
+                self.useful_scans += 1
+                reward += 0.5  # Moderate reward for successful scan
             else:
-                reward -= 0.5  # Wrong scan
+                reward -= 0.05  # Small penalty for wrong scan (reduced from 0.1)
 
         elif action == 5:  # Pickup / Drop
+            self.pickup_attempts += 1
             pickup_drop_reward = self._pickup_or_drop()
             reward += pickup_drop_reward
+            
+            # Add small bonus for attempting pickup even if invalid (encourages exploration)
+            if pickup_drop_reward == -0.5:  # Invalid attempt
+                # Reduce penalty if we're at least near the survivor
+                if self.carrying == 0 and np.array_equal(self.agent, self.survivor):
+                    # Actually this shouldn't happen, but just in case
+                    reward += 0.3  # Partially offset the penalty
             
             # FIX: Check success immediately after drop-off
             if pickup_drop_reward == 20:  # Just completed drop-off
@@ -103,26 +129,39 @@ class FireRescueEnv(gym.Env):
                     reward += 30  # Success bonus
                     done = True
                     info["success"] = True
+                    self._add_metrics_to_info(info, current_step)
                     return self._get_obs(), reward, done, truncated, info
+        
+        # Track when survivor is first reached
+        if self.survivor_found_step is None and np.array_equal(self.agent, self.survivor_initial_pos):
+            self.survivor_found_step = current_step
 
         # === DISTANCE SHAPING (only if not done) ==============
-        
-        if not done:
-            if self.carrying == 0:
-                # Not carrying - reward getting closer to survivor
-                curr = self._dist(self.agent, self.survivor)
-                if self.last_s_dist is not None and curr < self.last_s_dist:
-                    reward += 0.5  # Reduced from 1
-                self.last_s_dist = curr
+        # CRITICAL FIX: Removed distance shaping to prevent exploitation
+        # The agent was getting stuck in "move toward survivor forever" loop
+        # because moving gave +0.05 reward without requiring pickup/scan actions
+        # 
+        # Distance shaping is now DISABLED - agent must learn to use pickup action
+        # If learning is too slow, consider:
+        # 1. Increasing pickup/dropoff rewards
+        # 2. Using curriculum learning (shorter episodes initially)
+        # 3. Increasing entropy coefficient for more exploration
 
-            else:  # carrying == 1
-                # Carrying - reward getting closer to door
-                curr = self._dist(self.agent, self.door)
-                if self.last_d_dist is not None and curr < self.last_d_dist:
-                    reward += 0.5  # Reduced from 1
-                self.last_d_dist = curr
-
+        # Add metrics to info before returning
+        self._add_metrics_to_info(info, current_step)
         return self._get_obs(), reward, done, truncated, info
+    
+    def _add_metrics_to_info(self, info, current_step):
+        """Add episode metrics to info dict."""
+        info["wall_collisions"] = self.wall_collisions
+        info["total_moves"] = self.total_moves
+        info["wall_collision_rate"] = self.wall_collisions / max(1, self.total_moves)
+        info["scan_attempts"] = self.scan_attempts
+        info["useful_scans"] = self.useful_scans
+        info["scan_efficiency"] = self.useful_scans / max(1, self.scan_attempts)
+        info["pickup_attempts"] = self.pickup_attempts
+        info["time_to_find_survivor"] = self.survivor_found_step if self.survivor_found_step else None
+        info["episode_length"] = current_step
 
     def _move(self, action):
         """Execute movement action. Returns reward."""
