@@ -1,8 +1,11 @@
-# 🚒 Fire-Rescue Reinforcement Learning Agent
+# Fire-Rescue Reinforcement Learning Agent
 
 A comprehensive reinforcement learning project implementing and comparing multiple RL algorithms (DQN, REINFORCE, PPO, A2C) on a custom Fire-Rescue environment.
 
-## 📋 Project Overview
+[Watch Demo & Explanation Video]()
+[Link to Trained Models]()
+
+## Project Overview
 
 This project implements an autonomous agent that navigates a building environment to locate and rescue survivors. The agent must:
 
@@ -11,7 +14,7 @@ This project implements an autonomous agent that navigates a building environmen
 - Pick up survivors and transport them to the exit
 - Minimize time and avoid collisions
 
-## 🎯 Problem Statement
+## Problem Statement
 
 **Scenario:** A rescue agent must operate in a building environment with obstacles to find and rescue a survivor.
 
@@ -22,7 +25,8 @@ This project implements an autonomous agent that navigates a building environmen
 3. Navigate to the survivor's location
 4. Pick up the survivor
 5. Return to the exit door
-6. Successfully complete the rescue
+6. Drop-off the survivor
+7. Successfully complete the rescue
 
 **Challenges:**
 
@@ -31,7 +35,7 @@ This project implements an autonomous agent that navigates a building environmen
 - Time constraints (200 steps maximum)
 - Action space coordination (movement + special actions)
 
-## 🏗️ Environment Specifications
+## Environment Specifications
 
 ### State Space (8 dimensions)
 
@@ -64,12 +68,12 @@ This project implements an autonomous agent that navigates a building environmen
 - **+30.0** bonus for mission success
 - **-10.0** for timeout
 
-### Terminal Conditions
+### Termination Conditions
 
-- **Success:** Survivor delivered to exit door
+- **Success:** Survivor delivered to exit door and droped-off
 - **Failure:** Time limit exceeded (200 steps)
 
-## 🤖 Implemented Algorithms
+## Implemented Algorithms
 
 ### 1. DQN (Deep Q-Network) - Value-Based
 
@@ -118,7 +122,7 @@ Each algorithm was trained with **10+ different configurations** to find optimal
 - **Evaluation:** 50-100 episodes per configuration
 - **Metrics tracked:** Reward, success rate, efficiency, collision rate
 
-## 🚀 Installation & Usage
+## Installation & Usage
 
 ### Prerequisites
 
@@ -147,16 +151,16 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Running the Main Comparison Script
+### Running the Main Comparison and visualization Script
 
 ```bash
-# Compare all trained models and visualize the best
+# Compare all trained models and visualize the best trained model
 python main.py
 ```
 
 This will:
 
-1. Load all trained models (PPO, A2C, DQN, REINFORCE)
+1. Load all best trained models (PPO, A2C, DQN, REINFORCE)
 2. Evaluate each on 50 episodes
 3. Compare performance metrics
 4. Offer to visualize the best model in action
@@ -171,11 +175,13 @@ jupyter notebook training/ppo_training.ipynb
 
 ### Running Random Agent Demo
 
+This will visualize the custom environment + a random untrained agent:
+
 ```bash
 python environment/random_agent_demo.py
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 fire_rescue_agent/
@@ -197,7 +203,7 @@ fire_rescue_agent/
 │   └── a2c/                    # Trained A2C models
 ├── results/
 │   └── plots/                  # Training plots & analysis
-├── main.py                     # Model comparison script
+├── main.py                     # Model comparison script and visualization
 ├── requirements.txt            # Python dependencies
 ├── README.md                   # This file
 └── ASSIGNMENT_CHECKLIST.md     # Completion checklist
@@ -214,7 +220,7 @@ fire_rescue_agent/
 
 _(Run `python main.py` for complete evaluation)_
 
-## 🎮 Visualization Features
+## Visualization Features
 
 The Pygame visualization includes:
 
@@ -225,7 +231,7 @@ The Pygame visualization includes:
 - **Visual feedback** for all actions
 - **Performance metrics** display
 
-## 🔬 Key Findings
+## Key Findings
 
 ### Algorithm Comparison:
 
@@ -241,7 +247,7 @@ The Pygame visualization includes:
 - **Gamma matters:** Higher discount factors (0.99-0.995) performed better for long-horizon task
 - **Batch size impact:** Larger batches (128-256) provided more stable gradients
 
-## 🛠️ Technical Details
+## Technical Details
 
 ### Libraries Used:
 
@@ -251,62 +257,3 @@ The Pygame visualization includes:
 - **Pygame** - Visualization
 - **NumPy** - Numerical operations
 - **Matplotlib/Seaborn** - Result visualization
-
-### Performance Optimizations:
-
-- Vectorized environment operations
-- Efficient collision detection
-- Optimized reward calculation
-- GPU acceleration for neural networks (when available)
-
-## 📝 Assignment Requirements Met
-
-- ✅ Non-generic custom environment
-- ✅ Exhaustive action space definition
-- ✅ Well-defined observation space
-- ✅ Proper reward structure
-- ✅ Clear start and terminal conditions
-- ✅ Advanced Pygame visualization
-- ✅ Random agent demonstration
-- ✅ Environment diagram and descriptions
-- ✅ All 4 RL algorithms implemented
-- ✅ Extensive hyperparameter tuning (10+ configs each)
-- ✅ Model comparison and analysis
-- ✅ Video demonstration (see submission)
-- ✅ Detailed documentation
-- ✅ requirements.txt
-- ✅ GitHub repository
-
-## 🎥 Video Demonstration
-
-See the accompanying video for:
-
-- Problem overview
-- Environment walkthrough
-- Agent behavior explanation
-- Reward structure details
-- Live simulation with best model
-- Performance analysis
-- GUI and terminal outputs
-
-## 👨‍💻 Author
-
-**[Your Name]**
-
-- Course: Reinforcement Learning
-- Assignment: Summative - Mission Based RL
-- Date: November 2025
-
-## 📄 License
-
-This project is submitted as coursework for academic purposes.
-
-## 🙏 Acknowledgments
-
-- OpenAI Gymnasium for environment framework
-- Stable-Baselines3 for RL algorithm implementations
-- Course instructors for guidance and feedback
-
----
-
-**For detailed completion status and remaining tasks, see [ASSIGNMENT_CHECKLIST.md](ASSIGNMENT_CHECKLIST.md)**
