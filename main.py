@@ -43,8 +43,8 @@ MODELS = {
         "algorithm": "A2C"
     },
     "DQN": {
-        "path": "models/dqn/config_4_large_batch/final_model.zip",
-        "config": "config_4_large_batch",
+        "path": "models/dqn/config_10_optimized/final_model.zip",
+        "config": "config_10_optimized",
         "algorithm": "DQN"
     },
     "REINFORCE": {
@@ -143,7 +143,7 @@ def load_model(model_info):
             model = DQN.load(path)
         elif algorithm == "REINFORCE":
             # Load custom REINFORCE model
-            env = FireRescueEnv()
+            env = FireRescueEnv(grid_size=10, max_time=250)  # Updated to match training
             state_dim = env.observation_space.shape[0]
             action_dim = env.action_space.n
             env.close()
@@ -183,7 +183,7 @@ def evaluate_model(model, model_name, algorithm, num_episodes=50):
     print(f"Evaluating {model_name} ({algorithm})")
     print(f"{'='*80}")
     
-    env = FireRescueEnv()
+    env = FireRescueEnv(grid_size=10, max_time=250)  # Updated to match training
     
     episode_rewards = []
     episode_lengths = []
@@ -289,7 +289,7 @@ def visualize_agent(model, model_name, algorithm, num_episodes=3):
     print(f"\n🎬 Running {num_episodes} episodes with GUI visualization...")
     print(f"   Press ESC or close window to stop early\n")
     
-    env = FireRescueEnv()
+    env = FireRescueEnv(grid_size=10, max_time=250)  # Updated to match training
     renderer = FireRescueRenderer(grid_size=env.grid_size, cell_size=60)
     
     for episode in range(num_episodes):

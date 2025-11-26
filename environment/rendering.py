@@ -24,6 +24,9 @@ class FireRescueRenderer:
         pygame.display.set_caption("Fire-Rescue Mission - RL Visualization")
         self.clock = pygame.time.Clock()
         
+        # Generate random fire cells (15-20% of free cells, avoid door area)
+        self.fire_cells = self._generate_fire_cells()
+        
         # Colors (professional palette)
         self.COLORS = {
             'background': (240, 240, 245),
@@ -76,6 +79,7 @@ class FireRescueRenderer:
         
         # Draw grid and walls
         self._draw_grid()
+        self._draw_fire()
         self._draw_walls(env.walls)
         
         # Draw door with glow effect
@@ -353,6 +357,7 @@ class FireRescueRenderer:
             (self.COLORS['survivor'], "Survivor"),
             (self.COLORS['door'], "Exit Door"),
             (self.COLORS['wall'], "Wall"),
+            (self.COLORS['fire'], "Fire (visual)"),
         ]
         
         legend_y += 30
@@ -361,6 +366,70 @@ class FireRescueRenderer:
             text_surface = self.font_small.render(text, True, self.COLORS['text'])
             self.screen.blit(text_surface, (panel_x + 35, legend_y - 8))
             legend_y += 22
+    
+    def _generate_fire_cells(self) -> set:
+        """Generate random fire cells (purely visual, doesn't affect gameplay)"""
+        fire_cells = set()
+        num_fire_cells = np.random.randint(15, 25)  # 15-25 fire cells
+        
+        for _ in range(num_fire_cells):
+            # Random position, avoid (0,0) door area
+            x = np.random.randint(1, self.grid_size)
+            y = np.random.randint(1, self.grid_size)
+            fire_cells.add((x, y))
+        
+        return fire_cells
+    
+    def _draw_fire(self):
+        """Draw animated fire cells (visual only)"""
+        for fire_pos in self.fire_cells:
+            x, y = fire_pos
+            cell_x = self.grid_offset_x + x * self.cell_size
+            cell_y = self.grid_offset_y + y * self.cell_size
+            center_x = cell_x + self.cell_size // 2
+            center_y = cell_y + self.cell_size // 2
+            
+            # Animated flame effect (3 layers with different animations)
+            time_offset = (x + y) * 10  # Different phase for each cell
+            
+            # Bottom layer - orange glow
+            glow_intensity = 0.5 + 0.3 * abs(np.sin((self.fire_animation + time_offset) / 8))
+            glow_size = int(self.cell_size * 0.4 * glow_intensity)
+            glow_surface = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+            pygame.draw.circle(
+                glow_surface,
+                (255, 140, 0, 100),  # Orange with alpha
+                (glow_size, glow_size),
+                glow_size
+            )
+            self.screen.blit(glow_surface, (center_x - glow_size, center_y - glow_size))
+            
+            # Middle layer - red/yellow flames
+            flame_height = abs(np.sin((self.fire_animation + time_offset) / 6)) * 15
+            flame_color = (
+                255,
+                int(100 + 100 * abs(np.cos((self.fire_animation + time_offset) / 7))),
+                0
+            )
+            pygame.draw.polygon(
+                self.screen,
+                flame_color,
+                [
+                    (center_x, center_y - int(flame_height)),
+                    (center_x - 10, center_y + 10),
+                    (center_x + 10, center_y + 10)
+                ]
+            )
+            
+            # Top layer - bright yellow flicker
+            if self.fire_animation % 5 < 2:  # Flicker effect
+                flicker_offset = np.random.randint(-3, 4)
+                pygame.draw.circle(
+                    self.screen,
+                    (255, 255, 0),
+                    (center_x + flicker_offset, center_y - int(flame_height / 2)),
+                    3
+                )
     
     def _update_animations(self):
         """Update animation counters"""

@@ -14,7 +14,7 @@ class FireRescueEnv(gym.Env):
 
     metadata = {"render_modes": ["human"]}
 
-    def __init__(self, grid_size=10, max_time=200):  # Increased time
+    def __init__(self, grid_size=10, max_time=250):  # Increased time for training
         super().__init__()
 
         self.grid_size = grid_size
@@ -103,30 +103,28 @@ class FireRescueEnv(gym.Env):
         elif action == 4:  # Scan
             self.scan_attempts += 1
             # Scan gives bonus when near survivor to encourage discovery
-            manhattan_dist = np.linalg.norm(self.agent - self.survivor, ord=1)
-            if manhattan_dist <= 1.5:  # Slightly larger radius
-                self.useful_scans += 1
-                reward += 0.5  # Moderate reward for successful scan
+            # BUT only when NOT carrying (prevent exploitation when carrying survivor)
+            if self.carrying == 0:
+                manhattan_dist = np.linalg.norm(self.agent - self.survivor, ord=1)
+                if manhattan_dist <= 1.5:  # Slightly larger radius
+                    self.useful_scans += 1
+                    reward += 0.5  # Moderate reward for successful scan
+                else:
+                    reward -= 0.05  # Small penalty for wrong scan
             else:
-                reward -= 0.05  # Small penalty for wrong scan (reduced from 0.1)
+                # If carrying, scanning is useless - STRONG penalty
+                reward -= 1.0  # Strong penalty for scanning while carrying (from -0.2)
 
         elif action == 5:  # Pickup / Drop
             self.pickup_attempts += 1
             pickup_drop_reward = self._pickup_or_drop()
             reward += pickup_drop_reward
             
-            # Add small bonus for attempting pickup even if invalid (encourages exploration)
-            if pickup_drop_reward == -0.5:  # Invalid attempt
-                # Reduce penalty if we're at least near the survivor
-                if self.carrying == 0 and np.array_equal(self.agent, self.survivor):
-                    # Actually this shouldn't happen, but just in case
-                    reward += 0.3  # Partially offset the penalty
-            
-            # FIX: Check success immediately after drop-off
-            if pickup_drop_reward == 20:  # Just completed drop-off
+            # Check success immediately after drop-off
+            if pickup_drop_reward == 30:  # Just completed drop-off (updated from 20)
                 # Verify survivor is at door
                 if np.array_equal(self.survivor, self.door):
-                    reward += 30  # Success bonus
+                    reward += 50  # Success bonus (total +80 for complete drop-off)
                     done = True
                     info["success"] = True
                     self._add_metrics_to_info(info, current_step)
@@ -136,16 +134,36 @@ class FireRescueEnv(gym.Env):
         if self.survivor_found_step is None and np.array_equal(self.agent, self.survivor_initial_pos):
             self.survivor_found_step = current_step
 
-        # === DISTANCE SHAPING (only if not done) ==============
-        # CRITICAL FIX: Removed distance shaping to prevent exploitation
-        # The agent was getting stuck in "move toward survivor forever" loop
-        # because moving gave +0.05 reward without requiring pickup/scan actions
-        # 
-        # Distance shaping is now DISABLED - agent must learn to use pickup action
-        # If learning is too slow, consider:
-        # 1. Increasing pickup/dropoff rewards
-        # 2. Using curriculum learning (shorter episodes initially)
-        # 3. Increasing entropy coefficient for more exploration
+        # === DISTANCE SHAPING - Two-Phase Guidance ====================
+        # Phase 1: Guide agent TO survivor (when not carrying)
+        # Phase 2: Guide agent TO door (when carrying survivor)
+        
+        if action in [0, 1, 2, 3]:  # Only apply to movement actions
+            if self.carrying == 0:
+                # PHASE 1: Not carrying - guide toward survivor
+                current_s_dist = self._dist(self.agent, self.survivor)
+                if self.last_s_dist is None:
+                    self.last_s_dist = current_s_dist
+                
+                if current_s_dist < self.last_s_dist:
+                    reward += 0.2  # Moderate reward for approaching survivor
+                elif current_s_dist > self.last_s_dist:
+                    reward -= 0.1  # Small penalty for moving away
+                
+                self.last_s_dist = current_s_dist
+            
+            else:  # self.carrying == 1
+                # PHASE 2: Carrying survivor - guide toward door
+                current_door_dist = self._dist(self.agent, self.door)
+                if self.last_d_dist is None:
+                    self.last_d_dist = current_door_dist
+                
+                if current_door_dist < self.last_d_dist:
+                    reward += 0.8  # Strong reward for returning to door with survivor
+                elif current_door_dist > self.last_d_dist:
+                    reward -= 0.4  # Penalty for moving away from door
+                
+                self.last_d_dist = current_door_dist
 
         # Add metrics to info before returning
         self._add_metrics_to_info(info, current_step)
@@ -187,6 +205,11 @@ class FireRescueEnv(gym.Env):
 
         # Valid move
         self.agent = np.array([x, y], dtype=np.int32)
+        
+        # If carrying survivor, move survivor with agent
+        if self.carrying == 1:
+            self.survivor = self.agent.copy()
+        
         return 0  # Neutral reward for valid move
 
     def _pickup_or_drop(self):
@@ -195,16 +218,16 @@ class FireRescueEnv(gym.Env):
         # Attempt pickup
         if self.carrying == 0 and np.array_equal(self.agent, self.survivor):
             self.carrying = 1
-            return 10  # Pickup reward
+            return 15  # Pickup reward (increased from 10)
 
         # Attempt drop-off
         if self.carrying == 1 and np.array_equal(self.agent, self.door):
             self.carrying = 0
             self.survivor = self.door.copy()  # Move survivor to door
-            return 20  # Drop-off reward
+            return 30  # Drop-off reward (increased from 20)
 
         # Invalid action
-        return -0.5
+        return -1.0  # Stronger penalty for invalid pickup/drop (from -0.5)
 
     def _dist(self, a, b):
         """Manhattan distance between two points."""
