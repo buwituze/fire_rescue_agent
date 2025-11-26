@@ -1,0 +1,58 @@
+[
+    {
+        "model_name": "DQN",
+        "algorithm": "DQN",
+        "mean_reward": 59.245999999999796,
+        "std_reward": 49.22727500075528,
+        "success_rate": 0.0,
+        "success_count": 0,
+        "mean_episode_length": 200.0,
+        "mean_wall_collision_rate": 0.0,
+        "mean_scan_efficiency": 0.72,
+        "mean_pickup_attempts": 0.72,
+        "mean_time_to_find_survivor": 31.75,
+        "num_episodes": 50
+    },
+    {
+        "model_name": "A2C",
+        "algorithm": "A2C",
+        "mean_reward": 19.53999999999984,
+        "std_reward": 111.33137069128335,
+        "success_rate": 0.0,
+        "success_count": 0,
+        "mean_episode_length": 200.0,
+        "mean_wall_collision_rate": 0.17115577889447234,
+        "mean_scan_efficiency": 0.62,
+        "mean_pickup_attempts": 0.62,
+        "mean_time_to_find_survivor": 6.419354838709677,
+        "num_episodes": 50
+    },
+    {
+        "model_name": "PPO",
+        "algorithm": "PPO",
+        "mean_reward": 19.12799999999987,
+        "std_reward": 126.1250818671684,
+        "success_rate": 0.0,
+        "success_count": 0,
+        "mean_episode_length": 200.0,
+        "mean_wall_collision_rate": 0.23266331658291456,
+        "mean_scan_efficiency": 0.7511363104980125,
+        "mean_pickup_attempts": 1.6,
+        "mean_time_to_find_survivor": 64.94736842105263,
+        "num_episodes": 50
+    },
+    {
+        "model_name": "REINFORCE",
+        "algorithm": "REINFORCE",
+        "mean_reward": -14.003000000000007,
+        "std_reward": 15.053533837607668,
+        "success_rate": 0.0,
+        "success_count": 0,
+        "mean_episode_length": 200.0,
+        "mean_wall_collision_rate": 0.0,
+        "mean_scan_efficiency": 0.02,
+        "mean_pickup_attempts": 0.0,
+        "mean_time_to_find_survivor": null,
+        "num_episodes": 50
+    }
+]
