@@ -33,13 +33,13 @@ from stable_baselines3 import PPO, A2C, DQN
 
 MODELS = {
     "PPO": {
-        "path": "models/ppo/config_7_high_gamma/final_model.zip",
-        "config": "config_7_high_gamma",
+        "path": "models/ppo/config_11_many_epochs/final_model.zip",
+        "config": "config_11_many_epochs",
         "algorithm": "PPO"
     },
     "A2C": {
-        "path": "models/a2c/config_4_low_gamma/config_4_low_gamma_model.zip",
-        "config": "config_4_low_gamma",
+        "path": "models/a2c/config_5_high_entropy/config_5_high_entropy_model.zip",
+        "config": "config_5_high_entropy",
         "algorithm": "A2C"
     },
     "DQN": {
