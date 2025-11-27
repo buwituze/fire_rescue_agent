@@ -43,8 +43,8 @@ MODELS = {
         "algorithm": "A2C"
     },
     "DQN": {
-        "path": "models/dqn/config_10_optimized/final_model.zip",
-        "config": "config_10_optimized",
+        "path": "models/dqn/config_4_large_batch/final_model.zip",
+        "config": "config_4_large_batch",
         "algorithm": "DQN"
     },
     "REINFORCE": {
